@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 
 app = FastAPI()
 DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL,connect_args={"sslmode":"require"})
 
 @app.get("/test-db")
 def test_db():
