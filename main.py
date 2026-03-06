@@ -7,6 +7,45 @@ app = FastAPI()
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL,connect_args={"sslmode":"require"})
 
+@app.get("/predict")
+def predict(cutoff: float, community: str):
+
+    query = text(f"""
+    SELECT college_name, branch_name, district, cutoff_{community}
+    FROM cutoff_data
+    WHERE cutoff_{community} IS NOT NULL
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        rows = result.fetchall()
+
+    colleges = []
+
+    for row in rows:
+        diff = cutoff - row[3]
+
+        if diff >= 3:
+            round_name = "Round 1 (Safe)"
+        elif diff >= 1:
+            round_name = "Round 2 (Moderate)"
+        elif diff >= -1:
+            round_name = "Round 3 (Risky)"
+        else:
+            continue
+
+        colleges.append({
+            "college": row[0],
+            "branch": row[1],
+            "district": row[2],
+            "last_cutoff": row[3],
+            "chance": round_name
+        })
+
+    colleges = sorted(colleges, key=lambda x: x["last_cutoff"], reverse=True)
+
+    return colleges[:20]
+
 @app.get("/setup-db")
 def setup_db():
     with engine.connect() as connection:
