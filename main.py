@@ -1,20 +1,26 @@
 from fastapi import FastAPI
-import psycopg2
 import os
 from sqlalchemy import create_engine, text
 
 app = FastAPI()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL,connect_args={"sslmode":"require"})
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"sslmode": "require"}
+)
+
+# ---------- Predict API ----------
 
 @app.get("/predict")
-def predict(cutoff: float, community: str):
+def predict(cutoff: float):
 
     query = """
-    SELECT college_name, branch_name, district, oc_cutoff
+    SELECT college_name, branch, district, cutoff
     FROM colleges
-    WHERE oc_cutoff <= :cutoff
-    ORDER BY oc_cutoff DESC
+    WHERE cutoff <= :cutoff
+    ORDER BY cutoff DESC
     LIMIT 20
     """
 
@@ -23,6 +29,7 @@ def predict(cutoff: float, community: str):
         rows = result.fetchall()
 
     data = []
+
     for r in rows:
         data.append({
             "college": r[0],
@@ -33,57 +40,54 @@ def predict(cutoff: float, community: str):
 
     return data
 
+
+# ---------- Create Table ----------
+
 @app.get("/setup-db")
 def setup_db():
+
     with engine.connect() as connection:
 
-        # Colleges Table
         connection.execute(text("""
-            CREATE TABLE IF NOT EXISTS colleges (
-                id SERIAL PRIMARY KEY,
-                college_name TEXT NOT NULL,
-                district TEXT,
-                college_type TEXT
-            );
-        """))
 
-        # Branches Table
-        connection.execute(text("""
-            CREATE TABLE IF NOT EXISTS branches (
-                id SERIAL PRIMARY KEY,
-                branch_name TEXT NOT NULL
-            );
-        """))
+        CREATE TABLE IF NOT EXISTS colleges (
 
-        # Cutoffs Table
-        connection.execute(text("""
-            CREATE TABLE IF NOT EXISTS cutoffs (
-                id SERIAL PRIMARY KEY,
-                college_id INT REFERENCES colleges(id) ON DELETE CASCADE,
-                branch_id INT REFERENCES branches(id) ON DELETE CASCADE,
-                year INT,
-                round INT,
-                community TEXT,
-                quota TEXT,
-                cutoff FLOAT
-            );
+            id SERIAL PRIMARY KEY,
+            college_name TEXT,
+            branch TEXT,
+            district TEXT,
+            cutoff FLOAT,
+            community TEXT
+
+        )
+
         """))
 
         connection.commit()
 
-    return {"message": "Professional Tables Created Successfully"}
+    return {"message": "Table Created"}
+
+
+# ---------- Insert Sample Data ----------
 
 @app.get("/insert-sample-data")
 def insert_data():
+
     with engine.connect() as connection:
+
         connection.execute(text("""
-        INSERT INTO colleges (college_name, branch, district, cutoff, community)
-        VALUES 
+
+        INSERT INTO colleges
+        (college_name, branch, district, cutoff, community)
+
+        VALUES
+
         ('PSG College of Technology','CSE','Coimbatore',198,'OC'),
         ('SSN College of Engineering','CSE','Chennai',197,'OC'),
         ('Thiagarajar College of Engineering','IT','Madurai',195,'BC'),
         ('Kongu Engineering College','CSE','Erode',194,'BC'),
         ('Coimbatore Institute of Technology','CSE','Coimbatore',196,'OC')
+
         """))
 
         connection.commit()
