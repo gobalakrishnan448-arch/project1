@@ -48,25 +48,18 @@ def setup_db():
     return {"message": "Professional Tables Created Successfully"}
 
 @app.get("/insert-sample-data")
-def insert_sample_data():
+def insert_data():
     with engine.connect() as connection:
-
-        # Insert Colleges
         connection.execute(text("""
-            INSERT INTO colleges (college_name, district, college_type)
-            VALUES
-            ('PSG College of Technology', 'Coimbatore', 'Government'),
-            ('ABC Engineering College', 'Salem', 'Private');
-        """))
-
-        # Insert Branches
-        connection.execute(text("""
-            INSERT INTO branches (branch_name)
-            VALUES
-            ('CSE'),
-            ('ECE');
+        INSERT INTO colleges (college_name, branch, district, cutoff, community)
+        VALUES 
+        ('PSG College of Technology','CSE','Coimbatore',198,'OC'),
+        ('SSN College of Engineering','CSE','Chennai',197,'OC'),
+        ('Thiagarajar College of Engineering','IT','Madurai',195,'BC'),
+        ('Kongu Engineering College','CSE','Erode',194,'BC'),
+        ('Coimbatore Institute of Technology','CSE','Coimbatore',196,'OC')
         """))
 
         connection.commit()
 
-    return {"message": "Sample Data Inserted Successfully"}
+    return {"message": "Sample Data Inserted"}
