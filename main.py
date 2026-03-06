@@ -46,3 +46,27 @@ def setup_db():
         connection.commit()
 
     return {"message": "Professional Tables Created Successfully"}
+
+@app.get("/insert-sample-data")
+def insert_sample_data():
+    with engine.connect() as connection:
+
+        # Insert Colleges
+        connection.execute(text("""
+            INSERT INTO colleges (college_name, district, college_type)
+            VALUES
+            ('PSG College of Technology', 'Coimbatore', 'Government'),
+            ('ABC Engineering College', 'Salem', 'Private');
+        """))
+
+        # Insert Branches
+        connection.execute(text("""
+            INSERT INTO branches (branch_name)
+            VALUES
+            ('CSE'),
+            ('ECE');
+        """))
+
+        connection.commit()
+
+    return {"message": "Sample Data Inserted Successfully"}
