@@ -4,10 +4,6 @@ from sqlalchemy import create_engine, text
 
 app = FastAPI()
 
-# ---------------------------
-# DATABASE CONNECTION
-# ---------------------------
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
@@ -15,10 +11,12 @@ engine = create_engine(
     connect_args={"sslmode": "require"}
 )
 
-# ---------------------------
-# CREATE TABLE
-# ---------------------------
+# Home
+@app.get("/")
+def home():
+    return {"status": "API Running"}
 
+# RESET DATABASE
 @app.get("/reset-db")
 def reset_db():
 
@@ -37,19 +35,15 @@ def reset_db():
         )
         """))
 
-    return {"message": "Database Reset Complete"}
+    return {"message": "Database Reset Done"}
 
-
-# ---------------------------
 # INSERT SAMPLE DATA
-# ---------------------------
-
 @app.get("/insert-sample-data")
 def insert_data():
 
-    with engine.begin() as connection:
+    with engine.begin() as conn:
 
-        connection.execute(text("""
+        conn.execute(text("""
         INSERT INTO colleges (college_name, branch, district, cutoff, community)
         VALUES
         ('PSG College of Technology','CSE','Coimbatore',198,'OC'),
@@ -61,42 +55,20 @@ def insert_data():
 
     return {"message": "Sample Data Inserted"}
 
-
-# ---------------------------
-# PREDICT API
-# ---------------------------
-
+# PREDICT
 @app.get("/predict")
-def predict(cutoff: float, community: str, district: str = "All"):
-
-    query = """
-    SELECT college_name, branch, district, cutoff
-    FROM colleges
-    WHERE cutoff <= :cutoff
-    AND community = :community
-    """
-
-    if district != "All":
-        query += " AND district = :district"
-
-    query += " ORDER BY cutoff DESC LIMIT 20"
+def predict(cutoff: float, community: str):
 
     with engine.connect() as conn:
 
-        if district == "All":
-            result = conn.execute(
-                text(query),
-                {"cutoff": cutoff, "community": community}
-            )
-        else:
-            result = conn.execute(
-                text(query),
-                {
-                    "cutoff": cutoff,
-                    "community": community,
-                    "district": district
-                }
-            )
+        result = conn.execute(text("""
+        SELECT college_name, branch, district, cutoff
+        FROM colleges
+        WHERE cutoff <= :cutoff
+        AND community = :community
+        ORDER BY cutoff DESC
+        LIMIT 20
+        """), {"cutoff": cutoff, "community": community})
 
         rows = result.fetchall()
 
@@ -104,11 +76,11 @@ def predict(cutoff: float, community: str, district: str = "All"):
 
     for r in rows:
 
-        difference = cutoff - r[3]
+        diff = cutoff - r[3]
 
-        if difference >= 2:
+        if diff >= 2:
             chance = "SAFE"
-        elif difference >= 1:
+        elif diff >= 1:
             chance = "MODERATE"
         else:
             chance = "RISKY"
