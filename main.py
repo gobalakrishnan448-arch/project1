@@ -26,7 +26,7 @@ def setup_db():
 
         connection.execute(text("""
 
-        CREATE TABLE IF NOT EXISTS colleges (
+        CREATE TABLE colleges (
 
             id SERIAL PRIMARY KEY,
             college_name TEXT,
