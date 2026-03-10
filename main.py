@@ -19,27 +19,25 @@ engine = create_engine(
 # CREATE TABLE
 # ---------------------------
 
-@app.get("/setup-db")
-def setup_db():
+@app.get("/reset-db")
+def reset_db():
 
-    with engine.begin() as connection:
+    with engine.begin() as conn:
 
-        connection.execute(text("""
+        conn.execute(text("DROP TABLE IF EXISTS colleges"))
 
+        conn.execute(text("""
         CREATE TABLE colleges (
-
             id SERIAL PRIMARY KEY,
             college_name TEXT,
             branch TEXT,
             district TEXT,
             cutoff FLOAT,
             community TEXT
-
         )
-
         """))
 
-    return {"message": "Table Created"}
+    return {"message": "Database Reset Complete"}
 
 
 # ---------------------------
